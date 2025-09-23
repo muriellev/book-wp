@@ -26,6 +26,7 @@ add_action('init', function () {
         'show_in_graphql'     => true,
         'graphql_single_name' => 'Book',
         'graphql_plural_name' => 'Books',
+        'show_in_rest'        => true,
     ]);
 
     // --- Taxonomy: Genre ---
@@ -64,3 +65,42 @@ add_action('init', function () {
         'graphql_plural_name' => 'Publishers',
     ]);
 });
+
+function book_api_on_post_save( $post_id, $post, $update ) {
+    // Prevent infinite loops if the API call modifies the post
+    if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id) ) {
+        return;
+    }
+
+    // Check if the post status is 'publish' or 'future;
+    // You might want to adjust this based on when you want to trigger the API call
+    if ( $post->post_status !== 'publish' && $post->post_status !== 'future' ) {
+        return;
+    }
+
+    // Prepare data for the API call
+    $api_data = array(
+        'secret'    => 'supersecret',
+        'slug' => 'books',
+        // Add any other relevant post data
+    );
+
+    // Make the API call
+    $api_url = 'YOUR_API_ENDPOINT_HERE'; // Replace with your actual API endpoint
+    $response = wp_remote_post( $api_url, array(
+        'method'    => 'POST',
+        'headers'   => array( 'Content-Type' => 'application/x-www-form-urlencoded' ),
+        'body'      => $api_data,
+        'timeout'   => 45, // Optional: set a timeout for the API request
+    ));
+
+    // Handle API response (optional)
+    if ( is_wp_error( $response ) ) {
+        error_log( 'API Error on post save: ' . $response->get_error_message() );
+    } else {
+        $body = wp_remote_retrieve_body( $response );
+        // Process the API response if needed
+        // error_log( 'API Response: ' . $body );
+    }
+}
+add_action( 'save_post_book', 'book_api_on_post_save', 10, 3 );

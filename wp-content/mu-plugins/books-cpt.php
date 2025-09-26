@@ -27,10 +27,11 @@ add_action('init', function () {
         'graphql_single_name' => 'Book',
         'graphql_plural_name' => 'Books',
         'show_in_rest'        => true,
+        'taxonomies' => ['genre'],
     ]);
 
     // --- Taxonomy: Genre ---
-    register_taxonomy('genre', ['book'], [
+    register_taxonomy('genre', 'book', [
         'labels'       => ['name' => __('Genres')],
         'hierarchical' => true,
         'public'       => true,
@@ -42,7 +43,7 @@ add_action('init', function () {
     ]);
 
     // --- Taxonomy: Author ---
-    register_taxonomy('author', ['book'], [
+    register_taxonomy('author', 'book', [
         'labels'       => ['name' => __('Author')],
         'hierarchical' => true,
         'public'       => true,
@@ -54,7 +55,7 @@ add_action('init', function () {
     ]);
 
     // --- Taxonomy: Publisher ---
-    register_taxonomy('publisher', ['book'], [
+    register_taxonomy('publisher', 'book', [
         'labels'       => ['name' => __('Publisher')],
         'hierarchical' => true,
         'public'       => true,
@@ -86,7 +87,7 @@ function book_api_on_post_save( $post_id, $post, $update ) {
     );
 
     // Make the API call
-    $api_url = 'YOUR_API_ENDPOINT_HERE'; // Replace with your actual API endpoint
+    $api_url = 'http://host.docker.internal:3000/api/revalidate'; // Replace with your actual API endpoint
     $response = wp_remote_post( $api_url, array(
         'method'    => 'POST',
         'headers'   => array( 'Content-Type' => 'application/x-www-form-urlencoded' ),
@@ -104,3 +105,36 @@ function book_api_on_post_save( $post_id, $post, $update ) {
     }
 }
 add_action( 'save_post_book', 'book_api_on_post_save', 10, 3 );
+
+// First, we register the field in the "where" clause.
+add_action('graphql_register_types', function () {
+
+    $customposttype_graphql_single_name = "Book"; // Replace this with your custom post type single name in PascalCase
+
+    // Registering the 'categorySlug' argument in the 'where' clause.
+    // Feel free to change the name 'categorySlug' to something that suits your requirements.
+    register_graphql_field('RootQueryTo' . $customposttype_graphql_single_name . 'ConnectionWhereArgs', 'categorySlug', [
+        'type' => [ 'list_of' => 'String' ], // To accept multiple strings
+        'description' => __('Filter by post objects that have the specific category slug', 'your_text_domain'),
+    ]);
+});
+
+// Next, we add a filter to modify the query arguments.
+add_filter('graphql_post_object_connection_query_args', function ($query_args, $source, $args, $context, $info) {
+
+    $categorySlug = $args['where']['categorySlug']; // Accessing the 'categorySlug' argument.
+
+    if (isset($categorySlug)) {
+        // If the 'categorySlug' argument is provided, we add it to the tax_query.
+        // For more details, refer to the WP_Query class documentation at https://developer.wordpress.org/reference/classes/wp_query/
+        $query_args['tax_query'] = [
+            [
+                'taxonomy' => 'genre', // Replace 'your_taxonomy' with your actual taxonomy key
+                'field' => 'slug',
+                'terms' => $categorySlug
+            ]
+        ];
+    }
+
+    return $query_args;
+}, 10, 5);

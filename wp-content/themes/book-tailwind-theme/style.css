@@ -7,3 +7,20 @@ Version: 0.1.0
 a {
     text-decoration: none;
 }
+
+.books-list {
+    display: grid;
+    gap: calc(var(--spacing) * 6);
+}
+
+@media (min-width: 40rem) {
+    .books-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 64rem) {
+    .books-list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}

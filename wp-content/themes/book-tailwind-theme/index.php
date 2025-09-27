@@ -1,6 +1,5 @@
 <?php get_header(); ?>
-<main class="container mx-auto p-6">
-  <h1 class="mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl">Hello Tailwind + WordPress 👋</h1>
+<main class="container mx-auto p-6 max-w-7xl px-4 sm:px-6 lg:px-8">
   <?php if ( have_posts() ) : ?>
   <div class="container">
     <?php while ( have_posts() ) : the_post(); ?>
@@ -10,4 +9,4 @@
   </div>
   <?php endif; ?>
 </main>
-<?php get_footer(); ?>
+<?php get_footer();
